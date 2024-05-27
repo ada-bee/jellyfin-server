@@ -54,7 +54,7 @@ public class EncodingOptions
         EnableSubtitleExtraction = true;
         AllowOnDemandMetadataBasedKeyframeExtractionForExtensions = new[] { "mkv" };
         HardwareDecodingCodecs = new string[] { "h264", "vc1" };
-        PreferSmallerSourceFiles = false;
+        PreferSmallerSourceFiles = true;
     }
 
     /// <summary>

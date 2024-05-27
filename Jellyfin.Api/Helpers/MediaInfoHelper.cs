@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -10,6 +10,7 @@ using Jellyfin.Api.Extensions;
 using Jellyfin.Data.Entities;
 using Jellyfin.Data.Enums;
 using Jellyfin.Extensions;
+using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Extensions;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Configuration;
@@ -18,6 +19,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Dlna;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -334,9 +336,16 @@ public class MediaInfoHelper
     /// <param name="maxBitrate">Max bitrate.</param>
     public void SortMediaSources(PlaybackInfoResponse result, long? maxBitrate)
     {
+        EncodingOptions encodingOptions = _serverConfigurationManager.GetEncodingOptions();
         var originalList = result.MediaSources.ToList();
 
-        result.MediaSources = result.MediaSources.OrderBy(i =>
+        if (encodingOptions.PreferSmallerSourceFiles)
+        {
+            result.MediaSources = result.MediaSources.OrderBy(i => i.Bitrate).ToArray();
+        }
+        else
+        {
+            result.MediaSources = result.MediaSources.OrderBy(i =>
             {
                 // Nothing beats direct playing a file
                 if (i.SupportsDirectPlay && i.Protocol == MediaProtocol.File)
@@ -346,35 +355,36 @@ public class MediaInfoHelper
 
                 return 1;
             })
-            .ThenBy(i =>
-            {
-                // Let's assume direct streaming a file is just as desirable as direct playing a remote url
-                if (i.SupportsDirectPlay || i.SupportsDirectStream)
+                .ThenBy(i =>
                 {
-                    return 0;
-                }
+                    // Let's assume direct streaming a file is just as desirable as direct playing a remote url
+                    if (i.SupportsDirectPlay || i.SupportsDirectStream)
+                    {
+                        return 0;
+                    }
 
-                return 1;
-            })
-            .ThenBy(i =>
-            {
-                return i.Protocol switch
+                    return 1;
+                })
+                .ThenBy(i =>
                 {
-                    MediaProtocol.File => 0,
-                    _ => 1,
-                };
-            })
-            .ThenBy(i =>
-            {
-                if (maxBitrate.HasValue && i.Bitrate.HasValue)
+                    return i.Protocol switch
+                    {
+                        MediaProtocol.File => 0,
+                        _ => 1,
+                    };
+                })
+                .ThenBy(i =>
                 {
-                    return i.Bitrate.Value <= maxBitrate.Value ? 0 : 2;
-                }
+                    if (maxBitrate.HasValue && i.Bitrate.HasValue)
+                    {
+                        return i.Bitrate.Value <= maxBitrate.Value ? 0 : 2;
+                    }
 
-                return 1;
-            })
-            .ThenBy(originalList.IndexOf)
-            .ToArray();
+                    return 1;
+                })
+                .ThenBy(originalList.IndexOf)
+                .ToArray();
+        }
     }
 
     /// <summary>

@@ -54,6 +54,7 @@ public class EncodingOptions
         EnableSubtitleExtraction = true;
         AllowOnDemandMetadataBasedKeyframeExtractionForExtensions = new[] { "mkv" };
         HardwareDecodingCodecs = new string[] { "h264", "vc1" };
+        PreferSmallerSourceFiles = true;
     }
 
     /// <summary>
@@ -275,4 +276,9 @@ public class EncodingOptions
     /// Gets or sets the file extensions on-demand metadata based keyframe extraction is enabled for.
     /// </summary>
     public string[] AllowOnDemandMetadataBasedKeyframeExtractionForExtensions { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether lower bitrate files should be prefered when multiple versions are present.
+    /// </summary>
+    public bool PreferSmallerSourceFiles { get; set; }
 }
